@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 #########################################################################################
-# R script to plot CpGsites overlapping islands (proto-CIMP)
+# R script to plot CpGsites overlapping CpG islands and/or genes (proto-CIMP)
 #
 # BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 16 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
@@ -9,19 +9,11 @@
 # Stephany Orjuela, February 2018
 #########################################################################################
 
-setwd("/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/sorjuela/serrated_pathway_paper/BiSulf")
-
 library(ggplot2)
 library(gridExtra)
 library(BiSeq)
 
-###barplot ####-------------------------------------------------------------
-#' Compare Islands with imprinted regions
-#known imprinted DMRs from Court et al.
-#court = read.table("Known.imprinted.DRMs.txt")
-#colnames(court) = c("chrom","chromStart","chromEnd", "gene", "GCcontent", "numCpGs")
-#court$length = court$chromEnd - court$chromStart
-#courtR = GRanges(seqnames = court$chrom, ranges = IRanges(court$chromStart, court$chromEnd))
+###barplot ####---------------------------------------------------------------------------------
 
 #CpG islands
 islands = read.csv("probes/CpGIslandTrack.bed", header =F, sep="\t")
@@ -61,22 +53,6 @@ Adentab <- filterSites(Adensites, red.islandR, "Adenomas")
 tab <- rbind(SSAtab, Adentab)
 
 pdf("protoCimpPlot.pdf")
-ggplot(tab, aes(x=values, y=counts, fill = tissue)) + 
-  geom_bar(stat="identity", position=position_dodge()) + 
-  theme_light(base_size = 15) +
-  scale_fill_manual(values=c('#CD3278', '#38678f')) +
-  #coord_cartesian(xlim = c(0, 15)) +
-  labs(x="Number of hypermethylated CpGs per canonical CpG Island", 
-       y="log - Number of CpG Islands") 
-
-ggplot(tab, aes(x=values, y=counts, fill = tissue)) + 
-  geom_bar(stat="identity", position=position_dodge()) + 
-  theme_light(base_size = 15) +
-  scale_fill_manual(values=c('#CD3278', '#38678f')) +
-  coord_cartesian(xlim = c(0, 15)) +
-  labs(x="Number of hypermethylated CpGs per canonical CpG Island", 
-       y="log - Number of CpG Islands") 
-
 ggplot(tab, aes(x=values, y=log(counts), fill = tissue)) + 
   geom_bar(stat="identity", position=position_dodge()) + 
   theme_light(base_size = 15) +
@@ -87,48 +63,7 @@ ggplot(tab, aes(x=values, y=log(counts), fill = tissue)) +
 
 dev.off()
 
-##Same thing but for DMRs #####-------------------------------
-
-load(file = "SSAvsNorm.DMRs.RData")
-SSADMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25]
-mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
-SSADMRsTable <- as(SSADMRs, "data.frame")
-
-load(file = "AdenvsNorm.DMRs.RData")
-AdenDMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25]
-mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
-AdenDMRsTable <- as(AdenDMRs, "data.frame")
-
-filterSites <- function(sites, red.islandR, tissue){
-  allclust.GR <- sites[sites$state == "hyper"]
-  #allclust.GR <- GRanges(allClust$chr, IRanges(start = allClust$pos, width = 1))
-  
-  #Overlap with islands and count
-  hits <- findOverlaps(red.islandR, allclust.GR)
-  red.islandR$numDMCs <- 0
-  red.islandR$numDMCs[rle(queryHits(hits))$values] <- rle(queryHits(hits))$lengths
-  
-  DMCs <- red.islandR$numDMCs[order(red.islandR$numDMCs)]
-  toPlot <- data.frame(counts = rle(DMCs)$lengths, values = rle(DMCs)$values, tissue = tissue)
-  return(toPlot)
-}
-
-SSAtab <- filterSites(SSADMRs, red.islandR, "SSA/Ps")
-Adentab <- filterSites(AdenDMRs, red.islandR, "Adenomas")
-tab <- rbind(SSAtab, Adentab)
-
-pdf("protoCimpPlot_DMRs.pdf")
-ggplot(tab, aes(x=values, y=log(counts), fill = tissue)) + 
-  geom_bar(stat="identity", position=position_dodge()) + 
-  theme_light(base_size = 15) +
-  scale_fill_manual(values=c('#CD3278', '#38678f')) +
-  #coord_cartesian(xlim = c(0, 15)) +
-  labs(x="Number of hypermethylated DMRs per canonical CpG Island", 
-       y="log - Number of CpG Islands")
-dev.off()
-
-
-##### Another alternative to showing protocimp from the extension perspective ####------------------
+##### Another alternative to showing protocimp from the extension perspective ####-----------------
 
 #Grab TSSs from ensembl
 library(biomaRt)
@@ -178,11 +113,10 @@ tss <- makeDFtoPlot(GRsitesSSA, GRsitesAden, GRproms, tss) #215170
 #Filter table
 x <- grep("[A-Za-z]", tss$chromosome_name)
 tss_filt <- tss[-x,]
-tss_filt <- tss_filt[rowSums(tss_filt[,9:10]) > 0,] #26628, filt: 17154
+tss_filt <- tss_filt[rowSums(tss_filt[,9:10]) > 0,] #17154
 
-#filt more to unique TSSs
 save(tss_filt, file = "NumCpGsitesperProm.2kbwindow.RData")
-load("NumCpGsitesperProm.2kbwindow.RData")
+#load("NumCpGsitesperProm.2kbwindow.RData")
 
 pdf("protoCimp_scatter.pdf")
 ggplot(tss_filt, aes(sitesAdenoma, sitesSSA)) + 

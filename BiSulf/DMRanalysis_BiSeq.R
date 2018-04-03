@@ -1,45 +1,43 @@
 #!/usr/bin/env Rscript
 # run as [R < scriptName.R --no-save]
-# command Rscript doesn't work on sherborne
 
-#########################################################################################
-# R script to run a DMR analysis workflow using BiSeq starting from .cov files
+#####################################################################################################
+# R script to run a DMR analysis workflow using BiSeq starting from .cov files obtained from Bismark
 #
 # BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
-# 16 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
+# 17 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
 # 
 # most of code taken from BiSeq vignette
 #
 # Stephany Orjuela, January 2018
-#########################################################################################
-
-setwd("/run/user/1000/gvfs/sftp:host=imlssherborne.uzh.ch/home/sorjuela/serrated_pathway_paper/BiSulf")
+####################################################################################################
 
 library(BiSeq)
 
-### Upload design matrix###-----------------------------------------------------------------------------
-##patient ID, file name, lesion, sex, and other stuff
+### Upload metadata ###-----------------------------------------------------------------------------
 
-#files <- read.table("design_matrix.csv", stringsAsFactors = F)
-files <- read.table("CRCmatrix.csv", stringsAsFactors = F)
+files <- read.table("design_matrix.csv", stringsAsFactors = F)
+#files <- read.table("CRCmatrix.csv", stringsAsFactors = F)
 
-### Read cov files into R ###--------------------------------------------------------------------------
-#Here are all the CpG sites from all samples
+### Read cov files into R ###-----------------------------------------------------------------------
+# These files contain all the covered CpG sites from all the samples
 
-#This object is reused in other script to run other DMR analysis
 BSr <- readBismark(files$V2, colData= DataFrame(group = files$V3, row.names = paste0(files$V1,".",files$V3))) 
-#BSr <- readBismark(files$V3, colData= DataFrame(group = files$V2, row.names = paste0(files$V1,".",files$V2))) 
-save(BSr, file="BSrawCRC.RData") 
+#save(BSr, file="BSraw.RData") 
 
-for(i in 1:22){
+#Since BiSeq takes a long time to run, we speed this up by looping through each chromosome, 
+#excluding X, Y and MT
+#The raw and smoothed count objects are saved for further plotting
 
-load(file="BSrawCRC.RData")
+for(i in 1:22){ 
+
+load(file="BSraw.RData")
 w <- which(seqnames(BSr) == paste0("chr",i))
 BSrchr <- BSr[w, ]
 rm(BSr)
-save(BSrchr, file = paste0("chr",i,"BSraw.CRC.RData"))
+save(BSrchr, file = paste0("chr",i,"BSraw.RData"))
 
-### Define clusters ###------------------------------------------------------------ 
+### Define clusters ###----------------------------------------------------------------------------- 
 
 BSr.clust.unlim <- clusterSites(BSrchr,
                                 groups = factor(colData(BSrchr)$group),
@@ -49,58 +47,68 @@ BSr.clust.unlim <- clusterSites(BSrchr,
                                 mc.cores = 30) #Here are only sites within clusters
 #save(BSr.clust.unlim, file = "ClusterSiteschr1.RData")
 
-### smooth the methylation values of CpG sites within the clusters ###----------- 
+### smooth the methylation values of CpG sites within the clusters ###----------------------------- 
 predictedMeth <- predictMeth(object = BSr.clust.unlim, h=1000, mc.cores = 30)
-save(predictedMeth, file=paste0("predictedMethchr",i,".CRC.RData"))
+save(predictedMeth, file=paste0("predictedMethchr",i,".RData"))
 
-load(paste0("predictedMethchr",i,".CRC.RData"))
-#predictedMeth <- predictedMeth[,-47] #just for SSA
+### Model methylation within a beta regression for each comparison ###-----------------------------
 
 #subset for groups
+#SSA
 #s <- which(colData(predictedMeth)$group == "SSA")
 #n <- s-1
 
-#a <- which(colData(predictedMeth)$group == "ADENOMA")
-#n <- a + 1
-
-a <- which(colData(predictedMeth)$group == "cimp")
+#Adenoma
+a <- which(colData(predictedMeth)$group == "ADENOMA")
 n <- a + 1
 
 SNpMeth <- predictedMeth[,c(a,n)]
-#colData(SNpMeth)$group <- factor(colData(SNpMeth)$group, levels = c("ADENOMA", "NORMAL"))
-colData(SNpMeth)$group <- factor(colData(SNpMeth)$group, levels = c("cimp", "NORMAL.cimp"))
+colData(SNpMeth)$group <- factor(colData(SNpMeth)$group, levels = c("ADENOMA", "NORMAL"))
 
 betaResultsSN <- betaRegression(formula = ~group, link = "probit", object = SNpMeth, type = "BR", mc.cores = 30) 
 
 
-### Test CpG clusters for differential methylation ###---------------------------------
-#For details go to other non-paired script
+### Test CpG clusters for differential methylation ###----------------------------------------------
 
-predictedMethNullSN <- SNpMeth[,c(1:3,4:6)] 
-colData(predictedMethNullSN)$group.null <- rep(c(1,2), 3) # number of patiens in this comparison
+#1st: Transform pvals into Zscores, which are Normal under the Ho:no group effect
+#model beta regression again for resampled data
+predictedMethNullSN <- SNpMeth[,c(1:28)] #Subset original table if desired 
+colData(predictedMethNullSN)$group.null <- rep(c(1,2), 14) #generate null group
 betaResultsNullSN <- betaRegression(formula = ~group.null, link = "probit", object = predictedMethNullSN, type="BR", mc.cores = 30)
 
+#2nd: estimate the variogram for the Z scores obtained from the resampled data
 varioSN <- makeVariogram(betaResultsNullSN)
 vario.sm <- smoothVariogram(varioSN, sill = 0.9)
+
+#3rd: replace the pValsList object (which consists of the test results of the
+#resampled data) by the test results of interest (for group effect)
 vario.aux <- makeVariogram(betaResultsSN, make.variogram=FALSE)
 vario.sm$pValsList <- vario.aux$pValsList
+
+#4th: The correlation of the Z scores between two locations in a cluster can now be estimated: 
 locCor <- estLocCor(vario.sm)
+
+#5th: test each CpG cluster for the presence of at least one differentially methylated 
+#location at q what can be interpreted as the size-weighted FDR on clusters:
 clusters.rej <- testClusters(locCor, FDR.cluster = 0.05) 
+
+#6th: Trim the rejected CpG clusters, that is to remove the not differentially methylated CpG sites at 
+#q 1, what can be interpreted as the location-wise FDR:
+#This is a table with all the diff sites
 clusters.trimmedSN <- trimClusters(clusters.rej, FDR.loc = 0.01)
 save(clusters.trimmedSN, file=paste0("BiSeqrunchr",i,"cimp.CRC.RData"))
 
-#build regions
+#build regions from DMCs
 DMRsSN <- findDMRs(clusters.trimmedSN, max.dist = 50, diff.dir = TRUE, alpha = 0.05)
 save(DMRsSN, file=paste0("DMRschr",i,"cimp.CRC.RData"))
 rm(list = ls())
 }
 
-### Do extra filters ####-------------------------------------------------------------------
+### Do extra filters ####---------------------------------------------------------------------
 
 #Load all DMR objects from all chroms (for each comparison) and make a single DMR table
 
 load_filter_DMRS <- function(path, CpGpath, comparison){
-  #f <- list.files(".", 'DMRschr[0-9]+Aden')
   f <- list.files(path, paste0("DMRschr[0-9]+", comparison))
   numbers <- as.numeric(regmatches(f, regexpr("[0-9]+", f)))
   f <- paste0(path, f[order(numbers)])
@@ -130,7 +138,6 @@ load_filter_DMRS <- function(path, CpGpath, comparison){
   probes <- read.table(file="probes/130912_HG19_CpGiant_4M_EPI.bed")
   probes <- GRanges(probes$V1, IRanges(start = probes$V2, end = probes$V3))
   
-  #set.seed(12345)
   hits <- findOverlaps(biseqDMRs, probes)
   gr.over <- pintersect(biseqDMRs[queryHits(hits)], probes[subjectHits(hits)])
   gr.counts <- tapply(gr.over, queryHits(hits), function(x) sum(width(x)))
@@ -157,12 +164,12 @@ load_filter_DMRS <- function(path, CpGpath, comparison){
 }
 
 #Example for a comparison
-biseqDMRs <- load_filter_DMRS("CRCdata/cimp/", "CRCdata/", "cimp" ) 
+biseqDMRs <- load_filter_DMRS(".", ".", "Aden" ) 
 
-#save(biseqDMRs, file = "CIMPvsNorm.DMRs.RData")
-#save(allClusters.trimmed, file = "nonCIMP.allclusters.trimmed.RData")
+save(biseqDMRs, file = "AdenvsNorm.DMRs.RData")
+save(allClusters.trimmed, file = "Aden.allclusters.trimmed.RData")
 
-#Make master table
+### Make master table
 
 biseqTable <- (as(biseqDMRs, "data.frame"))
 
@@ -170,6 +177,6 @@ colnames(biseqTable) <- c("CHR", "START", "END", "WIDTH", "STRAND", "MEDIAN.P", 
                           "MEDIA.METH.DIFFERENCE", "bpOVERLAP.WITH.PROBE", "PERCENTAGE.OVERLAP", "TOTAL.NUM.CpGs",
                           "NUM.DIFFERENTIAL.CpGs")
 
-write.table(biseqTable, "serrated_table_DMRs_BiSeqAll_AdenVsNormFix.csv", row.names=F, quote=FALSE, sep="\t")
+write.table(biseqTable, "serrated_table_DMRs_BiSeq_AdenVsNorm.csv", row.names=F, quote=FALSE, sep="\t")
 
 
