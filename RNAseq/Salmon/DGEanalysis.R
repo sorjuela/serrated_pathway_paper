@@ -5,7 +5,7 @@
 # RNA-seq data set with 33 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 17 SSA/Ps lesion with normal tissue, and 16 adenoma lesion with normal tissue
 # 
-# part of code taken from Charlotte Soneson and Mark Robinson
+# part of code taken from Charlotte Soneson
 #
 # Stephany Orjuela, January 2018
 #########################################################################################
@@ -29,9 +29,8 @@ library(matrixStats)
 ## load metadata ####-----------------------------------------------------------------------------------------------------
 ##patient ID, file name, lesion, sex, and other stuff
 
-files = as.matrix(read.table("GeneTables/new_exp_setup.csv")) 
-files2 = as.matrix(read.table("GeneTables/exp_setup_newFa.csv")) #without normal_SSA
-bf = as.vector(files2[,1])
+files <- as.matrix(read.table("GeneTables/new_exp_setup.csv")) 
+files2 <- as.matrix(read.table("GeneTables/exp_setup_newFa.csv")) #without normal_SSA
 
 ##Make tx2gene table ####-------------------------------------------------------------------------------------------------
 
@@ -50,7 +49,7 @@ rownames(tx2gene) <- NULL
 ##Process to input edgeR, normalize ####---------------------------------------------------------------------------------
 
 txi_salmonsimplesum <- tximport(files = bf, type = "salmon", tx2gene = tx2gene, dropInfReps = TRUE)
-save(txi_salmonsimplesum, file="txi_cdna.RData")
+#save(txi_salmonsimplesum, file="txi_cdna.RData")
 
 #Calculate offset
 cts <- txi_salmonsimplesum$counts
@@ -71,6 +70,7 @@ y <- calcNormFactors(y)
 
 #Set up factors for analysis and plots
 cond <- factor(files2[,3])
+
 cond_forplots <- factor(files[,3])
 cond_forplots_fix <- gsub("NORMAL_SSA", "NORMAL.SSA", cond_forplots)
 cond_forplots_fix <- gsub("SSA$", "SSA/P", cond_forplots_fix)
@@ -110,13 +110,10 @@ ggsave("MDS2D_cdna.pdf")
 ##Set up design matrix for GLM ####--------------------------------------------------------------------------------------
 #this is an additive linear model with patient as the blocking factor
 
-patient <- factor(y$samples$samples)
-cond <- factor(files2[,3])
 cond <- relevel(cond, "NORMAL")
+
 design_byP <- model.matrix(~cond+patient) ##block by patient
-#design <- model.matrix(~0+cond) ##or not
 colnames(design_byP) <- c(levels(cond), levels(y$samples$samples)[-1])
-#colnames(design) <- levels(cond)
 
 #GLM estimates of dispersion
 yg <- estimateGLMCommonDisp(y, design_byP)
@@ -144,7 +141,7 @@ colnames(yg$genes) <- c("ENSEMBLID", "GENESYMBOL",
                       paste0(y$samples$samples,".",y$samples$group))
 
 ##Statistical testing, fit gene-wise glms ####-------------------------------------------------------------------------
-fit <- glmFit(y, design_byP) #blocking 
+fit <- glmFit(y, design_byP)
 
 save(y,yg,files,files2,cond,design_byP,fit,cond_forplots_fix, 
      age,agegroup,tissue.colors, gender.colors, gender, file="DGE_obj_Block_withVM_moreGenes_novEdit_cdnaFIX_2fit.RData")
@@ -163,10 +160,9 @@ for(i in 1:2){
 
 #And for S-A
 lrt[[3]] <- glmLRT(fit, contrast=c(0,-1,1,rep(0,31)))
-#lrt[[3]] <- glmLRT(fit, contrast=c(0,-1,1,rep(0,29)))
 de[,3] <- decideTestsDGE(lrt[[3]], p.value=0.05, lfc=1)
 
-des_b=as.data.frame(de)
+des_b <- as.data.frame(de)
 colnames(des_b)=c("ADENOMA-NORMAL","SSA-NORMAL","SSA-ADENOMA")
 save(lrt, de, des_b, file="DGE_testsBlock_filtGenes_withVM_moreGenes_novEdit_cdnaFix_2fit.Rdata")
 
