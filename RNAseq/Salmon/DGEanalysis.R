@@ -29,8 +29,7 @@ library(matrixStats)
 ## load metadata ####-----------------------------------------------------------------------------------------------------
 ##patient ID, file name, lesion, sex, and other stuff
 
-files <- as.matrix(read.table("GeneTables/new_exp_setup.csv")) 
-files2 <- as.matrix(read.table("GeneTables/exp_setup_newFa.csv")) #without normal_SSA
+files <- read.table("GeneTables/new_exp_setup.csv", stringsAsFactors = F, header = T) 
 
 ##Make tx2gene table ####-------------------------------------------------------------------------------------------------
 
@@ -48,7 +47,7 @@ rownames(tx2gene) <- NULL
 
 ##Process to input edgeR, normalize ####---------------------------------------------------------------------------------
 
-txi_salmonsimplesum <- tximport(files = bf, type = "salmon", tx2gene = tx2gene, dropInfReps = TRUE)
+txi_salmonsimplesum <- tximport(files = files$FILES, type = "salmon", tx2gene = tx2gene, dropInfReps = TRUE)
 #save(txi_salmonsimplesum, file="txi_cdna.RData")
 
 #Calculate offset
@@ -56,8 +55,9 @@ cts <- txi_salmonsimplesum$counts
 normMat <- txi_salmonsimplesum$length 
 normMat <- normMat/exp(rowMeans(log(normMat)))
 o <- log(calcNormFactors(cts/normMat)) + log(colSums(cts/normMat))
-files2 = as.data.frame(files2)
-y <- DGEList(cts, samples = files2[,2], group = files2[,3])
+
+cond <- gsub("_SSA", "", files$TISSUE)
+y <- DGEList(cts, samples = files$PATIENT, group = cond)
 y$offset <- t(t(log(normMat)) + o) 
 
 y <- calcNormFactors(y)
@@ -68,16 +68,14 @@ y <- calcNormFactors(y)
 
 ##Pre-Plots ####---------------------------------------------------------------------------------------------------------
 
-#Set up factors for analysis and plots
-cond <- factor(files2[,3])
-
-cond_forplots <- factor(files[,3])
+#Set up factors for plots
+cond_forplots <- factor(files$TISSUE)
 cond_forplots_fix <- gsub("NORMAL_SSA", "NORMAL.SSA", cond_forplots)
 cond_forplots_fix <- gsub("SSA$", "SSA/P", cond_forplots_fix)
 cond_forplots_fix <- factor(gsub("NORMAL$", "NORMAL.ADENOMA", cond_forplots_fix), 
                            levels = c("NORMAL.ADENOMA", "ADENOMA", "NORMAL.SSA/P", "SSA/P"))
-gender <- factor(files2[,4])
-age <- as.character(files2[,5])
+gender <- factor(files$SEX)
+age <- as.character(files$AGE)
 agegroup <- ifelse(age <= 50, "<50", "50-70")
 agegroup[which(age >= 70)] <- ">70"
 
@@ -93,9 +91,10 @@ gender.colors <- c("gray56", "gray12")
 ##MDS plot ####------------------------------------------------------------------------------------------
 
 #2D MDS plot
-m1 = plotMDS(y, labels = y$samples$samples)$cmdscale.out
+m1 <- plotMDS(y)$cmdscale.out
 df <- data.frame(dim1 = m1[,1], dim2 = m1[,2])
-label = y$samples$samples
+label <- y$samples$samples
+
 ggplot(df)+
   scale_shape_identity() +
   geom_point(data=df, aes(x=dim1, y=dim2, shape = gender, colour = cond_forplots_fix), size=5) +
@@ -125,7 +124,7 @@ yg <- estimateGLMTagwiseDisp(yg, design_byP)
 #Grab all information from ensembl IDs
 ids <- gsub("\\.\\d+", "", as.character(rownames(yg)))
 
-edb=EnsDb.Hsapiens.v75
+edb <- EnsDb.Hsapiens.v75
 df <- select(edb, keys = ids, keytype = "GENEID", 
              columns = c("GENENAME", "SEQNAME", 
                          "GENESEQSTART","GENESEQEND", "SEQLENGTH", "SEQSTRAND"))
@@ -141,9 +140,9 @@ colnames(yg$genes) <- c("ENSEMBLID", "GENESYMBOL",
                       paste0(y$samples$samples,".",y$samples$group))
 
 ##Statistical testing, fit gene-wise glms ####-------------------------------------------------------------------------
-fit <- glmFit(y, design_byP)
+fit <- glmFit(yg, design_byP)
 
-save(y,yg,files,files2,cond,design_byP,fit,cond_forplots_fix, 
+save(yg,files,cond,design_byP,fit,cond_forplots_fix, 
      age,agegroup,tissue.colors, gender.colors, gender, file="DGE_obj_Block_withVM_moreGenes_novEdit_cdnaFIX_2fit.RData")
 
 
@@ -151,7 +150,7 @@ save(y,yg,files,files2,cond,design_byP,fit,cond_forplots_fix,
 
 #A-N and S-N
 lrt <- list()
-de <- matrix(NA, dim(y$counts)[1], 3)
+de <- matrix(NA, dim(yg$counts)[1], 3)
 
 for(i in 1:2){
   lrt[[i]] <- glmLRT(fit, coef=i+1)
@@ -167,7 +166,7 @@ colnames(des_b)=c("ADENOMA-NORMAL","SSA-NORMAL","SSA-ADENOMA")
 save(lrt, de, des_b, file="DGE_testsBlock_filtGenes_withVM_moreGenes_novEdit_cdnaFix_2fit.Rdata")
 
 ##Make master table ####-----------------------------------------------------------------------------------------------
-res <- data.frame(y$genes)
+res <- data.frame(yg$genes)
 
 names <- c("Aden-Norm", "SSA-Norm", "SSA-Aden")
 for(i in 1:3){
@@ -186,5 +185,5 @@ pvals <- res[, grep("PValue", colnames(res))]
 rm <- rowMins(as.matrix(pvals))
 o <- order(rm)
 res <- res[o,]
-write.table(res, "serrated_table_DGE_moreGenes_lfc1_nov1_cdnaFIX_fit2.csv", row.names=F, quote=FALSE, sep="\t")
+write.table(res, "serrated_table_DGE.csv", row.names=F, quote=FALSE, sep="\t")
 
