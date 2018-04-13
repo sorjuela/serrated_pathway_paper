@@ -1,0 +1,77 @@
+---
+title: "3D MDS plot CpG sites"
+author: "Hadi Haribi/Hannah Parker"
+date: "April 12, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+meta <- read.csv(csvfile, header=TRUE, stringsAsFactors=F)
+rownames(meta) <- meta$ID
+
+setwd("/Volumes/hannah/hannah/cov_files/clps_cov_files_ALL/")
+
+cond <- factor(meta$Group, levels = c("Normal.SSA/P","Normal.Adenoma","SSA/P",
+                                      "Adenoma","NM.NonCIMP-CRC","NonCIMP-CRC","NM.CIMP-CRC","CIMP-CRC"))
+
+cols <- c("#EAABC8","#AADEDB","#CD3278","#38678F","#c7af9b","#8f6038","#b2b2b2","#32cd87")
+
+txcols <- c("black","blue")[(meta$Gender=="F")+1]
+
+covsamps <- paste0("./",meta$cov_file)
+sampnames <- meta$ID
+if(!file.exists("bisread_12DEC2017.Rda")){
+  bismark_read <- read.bismark(covsamps, sampnames, strandCollapse = FALSE, mc.cores=10, verbose=T)
+  save(bismark_read, file ="bisread_12DEC2017crcs.Rda")
+} else load("bisread_12DEC2017.Rda")
+
+
+dmdistcal <- function(x, top = 1e5, covth = 5){ # top 100,000; 5 read coverage
+  meths <- getMeth(x, type = "raw") #get raw meth props
+  coverage <- getCoverage(x) #cov
+  methsTR <- meths[ rowSums(coverage > covth) == length(covsamps),] #grab meth where all samples have cov above 5
+  methsTR <- asin(2*methsTR-1) #arc-sine transforn the meth 
+  bad <- rowSums(is.finite(methsTR)) < ncol(methsTR) #remove CpGs where arcsine is not finite for all samples
+  if(any(bad)) methsTR <- methsTR[!bad,,drop=FALSE]
+  
+  nprobes <- nrow(methsTR) 
+  nsamples <- ncol(methsTR)
+  top <- min(top,nprobes) #Change this top??
+  #		Distance measure is mean of top squared deviations for each pair of arrays
+  topindex <- nprobes-top+1L #??
+  dd <- matrix(0,nrow=nsamples,ncol=nsamples)
+  for (i in 2L:(nsamples))
+    for (j in 1L:(i-1L))
+      dd[i,j]=sqrt(mean(sort.int((methsTR[,i]-methsTR[,j])^2,partial=topindex)[topindex:nprobes]))
+  return(dd)
+}
+
+MDS_Meth <- cmdscale(as.dist(dmdistcal(bismark_read,top = 10000)),3) 
+
+lesions <- cond %in% c("SSA/P","Adenoma","NonCIMP-CRC","CIMP-CRC")
+
+# 3D MDS plots
+library(rgl)
+library(rglwidget)
+
+par3d(cex=1)
+plot3d(x = MDS_Meth[,1], y = MDS_Meth[,2], z = MDS_Meth[,3],
+       xlab = "1", ylab = "2", zlab = "3",
+       col = cols[cond],type="p", size=10)
+
+text3d( x = MDS_Meth[,1], y = MDS_Meth[,2]-.01, z = MDS_Meth[,3]-.01,
+        cex = .7, font = 1, #text = meta$ID, 
+        adj = 0.5, 
+        color=txcols) 
+
+
+subid <- currentSubscene3d()
+rglwidget(elementId="allmeth")
+```
+
