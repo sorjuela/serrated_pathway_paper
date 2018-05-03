@@ -18,14 +18,13 @@ Contains the code to align fastq files using __STAR__, followed by the generatio
 * `RNAseq/Salmon>`
 Contains the main pipeline to identify DEGs, using __Salmon__ to align the fastq files. Pre-processing of data was done in shell, and further analysis in R.
 
-* `RNAseq/Tables>`
-Contains two lists of DEGs. One with DEGs in the Adenoma samples, and another with DEGs in SSA/P samples.
+* `RNAseq/Data>`
+Contains the DGEList object in an .RData file, as well as the metadata and the final list of differentially expressed genes for each comparison.
 
 * `BiSulf/`
 Contains all the code in R and shell to obtain differentially methylated sites (DMCs) and regions (DMRs) from targeted bisulfite sequencing data. 
 
-* `BiSulf/Tables`
-Contains 6 lists: DMCs and DMRs identified in both Adenomas and SSA/Ps, and list of annotated DMRs with their corresponding matched expression.
-
+* `BiSulf/Data`
+Contains 6 lists: DMCs and DMRs identified in both Adenomas and SSA/Ps (4), list of annotated DMRs, and list of  genes with their corresponding methylation and matched expression (for figure 4.D).
 
 
