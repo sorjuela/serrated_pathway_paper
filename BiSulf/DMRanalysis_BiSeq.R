@@ -166,8 +166,8 @@ load_filter_DMRS <- function(path, CpGpath, comparison){
 #Example for a comparison
 biseqDMRs <- load_filter_DMRS(".", ".", "Aden" ) 
 
-save(biseqDMRs, file = "AdenvsNorm.DMRs.RData")
-save(allClusters.trimmed, file = "Aden.allclusters.trimmed.RData")
+save(biseqDMRs, file = "AdenVsNorm.DMRs.RData")
+save(allClusters.trimmed, file = "AdenVsNorm.DMCs.RData")
 
 ### Make master table
 

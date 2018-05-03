@@ -29,7 +29,7 @@ library(matrixStats)
 ## load metadata ####-----------------------------------------------------------------------------------------------------
 ##patient ID, file name, lesion, sex, and other stuff
 
-files <- read.table("GeneTables/new_exp_setup.csv", stringsAsFactors = F, header = T) 
+files <- read.table("Data/new_exp_setup.csv", stringsAsFactors = F, header = T) 
 
 ##Make tx2gene table ####-------------------------------------------------------------------------------------------------
 
@@ -143,7 +143,7 @@ colnames(yg$genes) <- c("ENSEMBLID", "GENESYMBOL",
 fit <- glmFit(yg, design_byP)
 
 save(yg,files,cond,design_byP,fit,cond_forplots_fix, 
-     age,agegroup,tissue.colors, gender.colors, gender, file="DGE_obj_Block_withVM_moreGenes_novEdit_cdnaFIX_2fit.RData")
+     age,agegroup,tissue.colors, gender.colors, gender, file="DGE_obj.RData")
 
 
 #compare all the pairwise differences between treatments
@@ -163,7 +163,7 @@ de[,3] <- decideTestsDGE(lrt[[3]], p.value=0.05, lfc=1)
 
 des_b <- as.data.frame(de)
 colnames(des_b)=c("ADENOMA-NORMAL","SSA-NORMAL","SSA-ADENOMA")
-save(lrt, de, des_b, file="DGE_testsBlock_filtGenes_withVM_moreGenes_novEdit_cdnaFix_2fit.Rdata")
+save(lrt, de, des_b, file="DGE_tests.Rdata")
 
 ##Make master table ####-----------------------------------------------------------------------------------------------
 res <- data.frame(yg$genes)

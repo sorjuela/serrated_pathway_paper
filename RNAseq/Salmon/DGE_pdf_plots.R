@@ -20,8 +20,8 @@ library(genefilter)
 library(ggplot2)
 library(VennDiagram)
 
-load(file = "DGE_obj_Block_withVM_moreGenes_novEdit_cdnaFIX_2fit.RData")
-load(file= "DGE_testsBlock_filtGenes_withVM_moreGenes_novEdit_cdnaFix_2fit.Rdata")
+load(file = "DGE_obj.RData")
+load(file= "DGE_tests.Rdata")
 
 ##Venn diagram ####---------------------------------------------------------------------------------------
 
@@ -158,13 +158,12 @@ dev.off()
 #The heatmap with the amount by which each gene deviates in a specific sample from the gene’s average across all samples.
 #So, I center each genes values across samples
 
-cps <- cpm(y)
-zz <- as.matrix(log2(1+cps))
-set.seed(12)
+zz <- as.matrix(log2(1+cpm(y)))
+zz <- as.matrix(log2(y$counts+1))
 rv <- rowVars(zz)
 
 #top variable genes
-idx <- order(-rv)[1:10000] #change number
+idx <- order(-rv)[1:100] #change number
 mat  <- zz[idx,]
 mat  <- mat - matrixStats::rowMeans2(mat)
 colnames(mat) <- paste0(y$samples$samples,"_",cond_forplots_fix)

@@ -18,13 +18,12 @@ library(ensembldb)
 
 ####Make table to plot ####----------------------------------------------------------------------------
 #to make full plot I use all DMRs without filtering
-load(file = "SSAvsNorm.DMRs.RData")
-
+load(file = "SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
 SSADMRsTable <- as(SSADMRs, "data.frame")
 
-load(file = "AdenvsNorm.DMRs.RData")
+load(file = "AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
 AdenDMRsTable <- as(AdenDMRs, "data.frame")
@@ -33,8 +32,8 @@ AdenDMRsTable <- as(AdenDMRs, "data.frame")
 annoData <- toGRanges(EnsDb.Hsapiens.v75) #option 1 
 proms <- promoters(annoData, upstream = 2000, downstream = 2000) #option 2
 
-#load expression
-load(file="../RNAseq/Salmon/DGE_testsBlock_filtGenes_withVM_moreGenes_novEdit_cdnaFix_2fit.Rdata")
+#load the lrt list from RNAseq scripts
+load(file="../RNAseq/Salmon/DGE_testsBlock_cdnaFix.Rdata")
 
 #function to filter out repeated DMRs
 choose1perGene <- function(annotatedDMRs, factor){
@@ -83,25 +82,13 @@ plotCorr <- function(DMRs, annoData, de, lrt, comparison){
 jointSN <- plotCorr(SSADMRs, annoData, de[,2], lrt[[2]], "SN") 
 jointAN <- plotCorr(AdenDMRs, annoData, de[,1], lrt[[1]], "AN")
 
-save(jointAN, jointSN, file ="correlationDataFull.RData")
-#load("correlationDataFull.RData")
-
-#Find interesting genes based on other authors
-delkerGenes <- c("ENSG00000139800", "ENSG00000124233", "ENSG00000253368", "ENSG00000184956",
-                 "ENSG00000163499", "ENSG00000075618", "ENSG00000043355", "ENSG00000076242",
-                 "ENSG00000189280", "ENSG00000169903", "ENSG00000109511", "ENSG00000163347",
-                 "ENSG00000175592", "ENSG00000144908", "ENSG00000129451", "ENSG00000036565",
-                 "ENSG00000112299", "ENSG00000169876")
-
-#LEF1-AS1 is a non-coding RNA
-SSAmarkers <- c("ENSG00000113083", "ENSG00000106483", "ENSG00000232021")
-
-#LINC is also a ncRNA
-panmarkers <- c("ENSG00000170743", "ENSG00000188227")
+save(jointAN, jointSN, file ="integrationDataFull.RData")
 
 ####Setup to plot ####-----------------------------------------------------------
 
-geneA <- jointSN[jointSN$Gene %in% c("ZIC2","HUNK"),]
+load("integrationDataFull.RData")
+
+geneA <- jointSN[jointSN$Gene %in% c("ZIC2","HUNK", "ZIC5"),]
 
 #Get numbers for plot
 getQ <- function(jointSN, meth.lim, exp.lim){
@@ -127,16 +114,22 @@ all.datos <- data.frame(
 p1 <- ggplot(jointSN, aes(x=median.diff, y=logFC, color = abs(logFC) >= 1 & abs(median.diff) >= 0.1)) +
 
   geom_point(size = 0.5) + 
-  theme_light(base_size = 15) +
+  theme_classic(base_size = 15) +
   guides(color=FALSE) + 
   scale_color_manual(values=c("#F5D6E4", "#CD3278")) + 
   geom_vline(xintercept=0, col="black", lty=1, lwd=0.5) +
   geom_hline(yintercept=0, col="black", lty=1, lwd=0.5) +
-  coord_cartesian(xlim = c(-0.5, 0.5), ylim = c(-8,8)) +
-  #labs(x="", y="logFC of expression", title = "SSA - Norm") +
-  geom_label(data=geneA, aes(x=median.diff, y=logFC, label=Gene), size=5, hjust = 0, nudge_x = 0.02,colour = "black",label.size = 1) +
-  annotate("text", x = c(0.3,0.3,-0.3,-0.3), y = c(7.5,-6.5,-6.5,7.5), label = dark.datos$numb, size = 4.5) + #colored
-  annotate("text", x = c(0.3,0.3,-0.3,-0.3), y = c(7,-7,-7,7), label = all.datos$numb, size = 3.5) #total
+  coord_cartesian(xlim = c(-0.40, 0.5), ylim = c(-8,8)) +
+  labs(x="", y=expression("log"[2]*"fold change of expression"), title = "") +
+  #geom_label(data=geneA, aes(x=median.diff, y=logFC, label=Gene), size=5, hjust = 0, nudge_x = 0.02,colour = "black",label.size = 1) +
+  geom_label_repel(data=geneA, aes(x=median.diff, y=logFC, label=Gene), box.padding = 1, point.padding = 0.3,
+                   segment.color = 'grey50', size=5, colour = "black",label.size = 1, 
+                  xlim = 0.4) +
+  annotate("text", x = c(0.3,0.3,-0.3,-0.3), y = c(8,-6.5,-6.5,8), label = dark.datos$numb, size = 4.5, 
+           family="", fontface="bold") + #colored
+  annotate("text", x = c(0.3,0.3,-0.3,-0.3), y = c(7.5,-7,-7,7.5), label = all.datos$numb, size = 3.5) #total
+
+p1
 
 geneA <- jointAN[jointAN$Gene %in% c("ZIC2","HUNK"),]
 
@@ -160,11 +153,9 @@ p2 <- ggplot(jointAN, aes(x=median.diff, y=logFC, color = abs(logFC) > 1 & abs(m
   theme_light(base_size = 15) +
   guides(color=FALSE) + 
   scale_color_manual(values=c( "#B9C9D7","#38678f")) + 
-  #scale_color_manual(values="#38678f") + 
   geom_vline(xintercept=0, col="black", lty=1, lwd=0.5) +
   geom_hline(yintercept=0, col="black", lty=1, lwd=0.5) +
   coord_cartesian(xlim = c(-0.5, 0.5), ylim = c(-8,8)) +
-  #labs(x="", y="", title = "Adenoma - Norm") +
   geom_label(data=geneA, aes(x=median.diff, y=logFC, label=Gene), size=5, hjust = 0, nudge_x = 0.02,colour = "black", label.size = 1) +
   annotate("text", x = c(0.3,0.3,-0.4,-0.4), y = c(7.5,-6.5,-6.5,7.5), label = dark.datos$numb, size = 4.5) +
   annotate("text", x = c(0.3,0.3,-0.4,-0.4), y = c(7,-7,-7,7), label = all.datos$numb, size = 3.5)
@@ -174,17 +165,18 @@ ggsave("corrPlots.pdf", width = 15, height = 10)
 
 #### Venn diagrams using genes ####-------------------------------
 
-#also make master table with this filtering
-
-load(file = "SSAvsNorm.DMRs.RData")
+#For this plot we use all the filters
+load(file = "SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo") #26435
 
-load(file = "AdenvsNorm.DMRs.RData")
+load(file = "AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo") #34382
 
 library(VennDiagram)
+
+#Annotation: For each gene the closest DMR to its TSS
 annotateDMRs <- function(DMRs, annoData){
   annoM <- ChIPpeakAnno::annotatePeakInBatch(SSADMRs,
                                              FeatureLocForDistance="TSS",
@@ -200,7 +192,6 @@ annotateDMRs <- function(DMRs, annoData){
 annoSN <- annotateDMRs(SSADMRs, annoData)
 annoAN <- annotateDMRs(AdenDMRs, annoData)
 save(annoSN, annoAN, file ="annotatedDMRsFiltered.RData")
-#load("annotatedDMRsFiltered.RData")
 
 pairVenn <- function(anno1, anno2, comp, colors, orientation){
   grid.newpage()
@@ -230,3 +221,26 @@ pdf("vennDiagramDMRsperGene.pdf")
 pairVenn(annoAN, annoSN, c("SSA/Ps","Adenomas"), c("#CD3278","#38678f"), "hyper")
 pairVenn(annoAN, annoSN, c("SSA/Ps","Adenomas"), c("#CD3278","#38678f"), "hypo")
 dev.off()
+
+### Make tables ###----------------------------------------------------------------------------
+load("annotatedDMRsFiltered.RData")
+
+makeTable <- function(x, comp){
+  edb <- EnsDb.Hsapiens.v75
+  name <- select(edb, keys = x$feature, keytype = "GENEID", columns = "GENENAME")
+  
+  x <- data.frame(ENSEMBLID = x$feature, 
+                  GENESYMBOL = name$GENENAME,
+                  Chr = seqnames(x),
+                  start = start(x),
+                  end = end(x),
+                  median.meth.diff = x$median.meth.diff,
+                  adj.median.p = x$median.p)
+  s <- order(x$median.meth.diff, decreasing = T)
+  x <- x[s,]
+  write.table(x, paste0("serrated_table_DMRs_",comp,".csv"), row.names=F, quote=FALSE, sep="\t")
+}
+
+makeTable(annoAN, "Adenoma")
+makeTable(annoSN, "SSA")
+

@@ -22,12 +22,12 @@ library(Gviz)
 library(cowplot)
 
 #### DMRs plots ###-----------------------------------------------------------
-load(file = "SSAvsNorm.DMRs.RData")
+load(file = "SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
 SSADMRsTable <- as(SSADMRs, "data.frame")
 
-load(file = "AdenvsNorm.DMRs.RData")
+load(file = "AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
 AdenDMRsTable <- as(AdenDMRs, "data.frame")
@@ -91,12 +91,12 @@ dev.off()
 #### Volcano plots DMRs ####--------------------------------------------------------
 
 #need all points even the ones without the filter
-load(file = "SSAvsNorm.DMRs.RData")
+load(file = "SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
 SSADMRsTable <- as(SSADMRs, "data.frame")
 
-load(file = "AdenvsNorm.DMRs.RData")
+load(file = "AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
 AdenDMRsTable <- as(AdenDMRs, "data.frame")
@@ -131,11 +131,11 @@ volcano(AdenDMRsTable, "AN")
 
 #These have the full filters
 
-load(file = "SSAvsNorm.DMRs.RData")
+load(file = "SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
 
-load(file = "AdenvsNorm.DMRs.RData")
+load(file = "AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
 

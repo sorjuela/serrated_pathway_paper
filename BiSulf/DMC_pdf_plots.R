@@ -21,9 +21,9 @@ library(EnsDb.Hsapiens.v75)
 library(Gviz)
 library(cowplot)
 
-load("SSA.allclusters.trimmed.RData")
+load("SSAVsNorm.DMCs.RData")
 SSAsites <- allClusters.trimmed
-load("Adenoma.allclusters.trimmed.RData")
+load("AdenVsNorm.DMCs.RData")
 AdenSites <- allClusters.trimmed
 
 ###Volcano plot ###---------------------------------------------------------------------------------------
@@ -106,7 +106,6 @@ p1 <- ggplot(d) +
   annotate("text", x = c(0.5,0.5,-0.5,-0.5,0,0), y = c(4,4.2,4,4.2,4,4.2), label = c(r1,r2,l1,l2,c1,c2), size = 3)
 p1  
 ggsave("overlayDensity_CANCERS.jpeg", device = "jpeg")
-ggsave("overlayDensity_CANCERS.pdf")
 
 #### Upset plot ####-------------------------------------------------------------------
 
