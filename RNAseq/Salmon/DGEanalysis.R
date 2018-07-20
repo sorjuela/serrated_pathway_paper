@@ -139,12 +139,11 @@ colnames(yg$genes) <- c("ENSEMBLID", "GENESYMBOL",
                       "CHROM", "START", "END", "WIDTH", "STRAND", 
                       paste0(y$samples$samples,".",y$samples$group))
 
+save(yg, file="DGEList.RData")
+
 ##Statistical testing, fit gene-wise glms ####-------------------------------------------------------------------------
+
 fit <- glmFit(yg, design_byP)
-
-save(yg,files,cond,design_byP,fit,cond_forplots_fix, 
-     age,agegroup,tissue.colors, gender.colors, gender, file="DGE_obj.RData")
-
 
 #compare all the pairwise differences between treatments
 
@@ -163,7 +162,7 @@ de[,3] <- decideTestsDGE(lrt[[3]], p.value=0.05, lfc=1)
 
 des_b <- as.data.frame(de)
 colnames(des_b)=c("ADENOMA-NORMAL","SSA-NORMAL","SSA-ADENOMA")
-save(lrt, de, des_b, file="DGE_tests.Rdata")
+#save(lrt, de, des_b, file="DGE_tests.Rdata")
 
 ##Make master table ####-----------------------------------------------------------------------------------------------
 res <- data.frame(yg$genes)
@@ -185,5 +184,5 @@ pvals <- res[, grep("PValue", colnames(res))]
 rm <- rowMins(as.matrix(pvals))
 o <- order(rm)
 res <- res[o,]
-write.table(res, "serrated_table_DGE.csv", row.names=F, quote=FALSE, sep="\t")
+write.table(res, "DEgenes_cdna.csv", row.names=F, quote=FALSE, sep="\t")
 
