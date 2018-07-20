@@ -4,10 +4,10 @@
 #####################################################################################################
 # R script to run a DMR analysis workflow using BiSeq starting from .cov files obtained from Bismark
 #
-# BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
+# BS-seq data set with 32 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 17 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
 # 
-# most of code taken from BiSeq vignette
+# Most of code taken from BiSeq vignette
 #
 # Stephany Orjuela, January 2018
 ####################################################################################################
@@ -16,8 +16,8 @@ library(BiSeq)
 
 ### Upload metadata ###-----------------------------------------------------------------------------
 
-files <- read.table("design_matrix.csv", stringsAsFactors = F)
-#files <- read.table("CRCmatrix.csv", stringsAsFactors = F)
+files <- read.table("design_matrix.csv", stringsAsFactors = F) #prelesions
+#files <- read.table("CRCmatrix.csv", stringsAsFactors = F) #lesions
 
 ### Read cov files into R ###-----------------------------------------------------------------------
 # These files contain all the covered CpG sites from all the samples
@@ -26,8 +26,7 @@ BSr <- readBismark(files$V2, colData= DataFrame(group = files$V3, row.names = pa
 #save(BSr, file="BSraw.RData") 
 
 #Since BiSeq takes a long time to run, we speed this up by looping through each chromosome, 
-#excluding X, Y and MT
-#The raw and smoothed count objects are saved for further plotting
+#excluding X, Y and MT. The raw and smoothed count objects are saved for further plotting
 
 for(i in 1:22){ 
 
@@ -44,25 +43,24 @@ BSr.clust.unlim <- clusterSites(BSrchr,
                                 perc.samples = 0.8,
                                 min.sites = 3,
                                 max.dist =  500,
-                                mc.cores = 30) #Here are only sites within clusters
-#save(BSr.clust.unlim, file = "ClusterSiteschr1.RData")
+                                mc.cores = 30)
 
 ### smooth the methylation values of CpG sites within the clusters ###----------------------------- 
 predictedMeth <- predictMeth(object = BSr.clust.unlim, h=1000, mc.cores = 30)
-save(predictedMeth, file=paste0("predictedMethchr",i,".RData"))
+#save(predictedMeth, file=paste0("predictedMethchr",i,".RData"))
 
 ### Model methylation within a beta regression for each comparison ###-----------------------------
 
-#subset for groups
+#subset for groups, change depending on group of interest
 #SSA
-#s <- which(colData(predictedMeth)$group == "SSA")
-#n <- s-1
+s <- which(colData(predictedMeth)$group == "SSA")
+n <- s-1
 
 #Adenoma
-a <- which(colData(predictedMeth)$group == "ADENOMA")
-n <- a + 1
+#a <- which(colData(predictedMeth)$group == "ADENOMA")
+#n <- a + 1
 
-SNpMeth <- predictedMeth[,c(a,n)]
+SNpMeth <- predictedMeth[,c(s,n)]
 colData(SNpMeth)$group <- factor(colData(SNpMeth)$group, levels = c("ADENOMA", "NORMAL"))
 
 betaResultsSN <- betaRegression(formula = ~group, link = "probit", object = SNpMeth, type = "BR", mc.cores = 30) 
@@ -106,7 +104,7 @@ rm(list = ls())
 
 ### Do extra filters ####---------------------------------------------------------------------
 
-#Load all DMR objects from all chroms (for each comparison) and make a single DMR table
+#Load all DMR objects from all chromosomes (for each comparison) and make a single DMR table
 
 load_filter_DMRS <- function(path, CpGpath, comparison){
   f <- list.files(path, paste0("DMRschr[0-9]+", comparison))
@@ -147,7 +145,7 @@ load_filter_DMRS <- function(path, CpGpath, comparison){
   
   ###Get number of GpGs from region that are differential, and the total number of covered CpGs
   
-  load(paste0(pathCpG, "GRangesAllCpGs.RData")) 
+  load(paste0(pathCpG, "GRangesAllCpGs.RData")) #contains all CpG sites covered in dataset
   
   #Total number of CpGs covered
   hits <- findOverlaps(biseqDMRs, GRallCpGs)
@@ -163,7 +161,7 @@ load_filter_DMRS <- function(path, CpGpath, comparison){
   return(biseqDMRs)
 }
 
-#Example for a comparison
+#EXAMPLE for a comparison
 biseqDMRs <- load_filter_DMRS(".", ".", "Aden" ) 
 
 save(biseqDMRs, file = "AdenVsNorm.DMRs.RData")

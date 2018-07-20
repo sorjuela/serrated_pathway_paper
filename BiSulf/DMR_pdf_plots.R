@@ -1,7 +1,7 @@
 #########################################################################################
 # R script to make plots for DMRs
 #
-# BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
+# BS-seq data set with 32 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 17 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
 # And 6 paired samples with diagnosed colorectal cancer, divided in CIMP (3) and nonCIMP (3) 
 # depending on the methylation state of MLH1
@@ -16,7 +16,6 @@ library(RColorBrewer)
 library(ChIPpeakAnno)
 library(genomation)
 library(methylKit)
-library(GenomicAlignments)
 library(EnsDb.Hsapiens.v75)
 library(Gviz)
 library(cowplot)
@@ -156,7 +155,7 @@ makeUpsetTable <- function(orientationA, orientationS, SSADMRs, AdenDMRs){
   hyperm[(length(comm)+length(uncomA)+1):(length(comm)+length(uncomA)+length(uncomS)),2] <- 1
   
   
-  colnames(hyperm)=c("Adenomas", "SSA/Ps")#, "NA-val", "NS-val")#,"ADENOMA-SSA")
+  colnames(hyperm)=c("Adenomas", "SSA/Ps"))
   return(hyperm)
   #l <- list(uncomA, uncomS)
   #return(uncomS)

@@ -1,7 +1,7 @@
 #########################################################################################
 # R script to make plots for DMCs
 #
-# BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
+# BS-seq data set with 32 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
 # 17 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
 # And 6 paired samples with diagnosed colorectal cancer, divided in CIMP (3) and nonCIMP (3) 
 # depending on the methylation state of MLH1
@@ -16,7 +16,6 @@ library(RColorBrewer)
 library(ChIPpeakAnno)
 library(genomation)
 library(methylKit)
-library(GenomicAlignments)
 library(EnsDb.Hsapiens.v75)
 library(Gviz)
 library(cowplot)
@@ -54,7 +53,7 @@ volcano <- function(clusters.trimmed, name){
 volcano(SSAsites, "SN")
 volcano(AdenSites, "AN")
 
-### Overlay two histograms ###--------------------------------------------------
+### Density plot for lesions ###--------------------------------------------------
 
 r1 <- length(filtSSAsites$chr[filtSSAsites$meth.diff >= 0.10])
 r2 <- length(filtAdensites$chr[filtAdensites$meth.diff >= 0.10])

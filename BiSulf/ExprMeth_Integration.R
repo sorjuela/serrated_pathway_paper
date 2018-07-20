@@ -1,9 +1,8 @@
 #!/usr/bin/env Rscript
-# run as [R < scriptName.R --no-save]
 
 #########################################################################################
 # R script to annotate DMRs obtaibned from BiSeq, and make a scatter plot of logFC of expression
-# vs DMR mean methylation, and add the number of points for each quadrant
+# vs DMR mean methylation
 # 
 # Stephany Orjuela, February 2018
 #########################################################################################
@@ -82,12 +81,13 @@ plotCorr <- function(DMRs, annoData, de, lrt, comparison){
 jointSN <- plotCorr(SSADMRs, annoData, de[,2], lrt[[2]], "SN") 
 jointAN <- plotCorr(AdenDMRs, annoData, de[,1], lrt[[1]], "AN")
 
-save(jointAN, jointSN, file ="integrationDataFull.RData")
+#save(jointAN, jointSN, file ="integrationDataFull.RData")
 
 ####Setup to plot ####-----------------------------------------------------------
 
-load("integrationDataFull.RData")
+#load("integrationDataFull.RData")
 
+#Genes of interest
 geneA <- jointSN[jointSN$Gene %in% c("ZIC2","HUNK", "ZIC5"),]
 
 #Get numbers for plot
@@ -111,6 +111,8 @@ all.datos <- data.frame(
     l <- length(x$ID)
     paste("Total =", l)}))
 
+#Plot for SSA/Ps
+
 p1 <- ggplot(jointSN, aes(x=median.diff, y=logFC, color = abs(logFC) >= 1 & abs(median.diff) >= 0.1)) +
 
   geom_point(size = 0.5) + 
@@ -129,11 +131,10 @@ p1 <- ggplot(jointSN, aes(x=median.diff, y=logFC, color = abs(logFC) >= 1 & abs(
            family="", fontface="bold") + #colored
   annotate("text", x = c(0.3,0.3,-0.3,-0.3), y = c(7.5,-7,-7,7.5), label = all.datos$numb, size = 3.5) #total
 
-p1
+#Plot for Adenomas
 
 geneA <- jointAN[jointAN$Gene %in% c("ZIC2","HUNK"),]
 
-#Get numbers
 quadrants <- getQ(jointAN, 0.10,1)
 dark.datos <- data.frame(  
   numb = sapply(quadrants, function(x){
