@@ -3,8 +3,8 @@
 #########################################################################################
 # R script to plot CpGsites overlapping CpG islands and/or genes (proto-CIMP)
 #
-# BS-seq data set with 31 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
-# 16 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
+# BS-seq data set with 32 paired samples (collaboration with Hannah Parker and Giancarlo Marra): 
+# 17 SSA/Ps lesions with normal tissue, and 15 adenoma lesions with normal tissue
 #
 # Stephany Orjuela, February 2018
 #########################################################################################
