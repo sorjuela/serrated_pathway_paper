@@ -11,16 +11,16 @@
 
 library(ggplot2)
 library(gridExtra)
-library(BiSeq)
+library(GenomicRanges)
 
 ###barplot ####---------------------------------------------------------------------------------
 
 #CpG islands
-islands = read.csv("probes/CpGIslandTrack.bed", header =F, sep="\t")
+islands = read.csv("BiSulf/probes/CpGIslandTrack.bed", header =F, sep="\t") #Available online on the UCSC webtool
 islandR = GRanges(seqnames = islands$V1, ranges = IRanges(islands$V2, islands$V3)) #28691
 
 #probes
-probes <- read.table(file="probes/130912_HG19_CpGiant_4M_EPI.bed")
+probes <- read.table(file="BiSulf/probes/130912_HG19_CpGiant_4M_EPI.bed") #Available online from Roche
 probes <- GRanges(probes$V1, IRanges(start = probes$V2, end = probes$V3)) #240131
 
 #Get islands that overlap a probe
@@ -29,9 +29,9 @@ red.islandR <- islandR[unique(queryHits(hits))] #26003
 red.islands <- islands[unique(queryHits(hits)),]
 
 #load SSA DMRs and select hypermethylated sites
-load("SSA.allclusters.trimmed.RData")
+load("BiSulf/Data/SSAVsNorm.DMCs.RData")
 SSAsites <- allClusters.trimmed
-load("Adenoma.allclusters.trimmed.RData")
+load("BiSulf/Data/AdenVsNorm.DMCs.RData")
 Adensites <- allClusters.trimmed
 
 filterSites <- function(sites, red.islandR, tissue){
@@ -113,9 +113,9 @@ tss <- makeDFtoPlot(GRsitesSSA, GRsitesAden, GRproms, tss) #215170
 #Filter table
 x <- grep("[A-Za-z]", tss$chromosome_name)
 tss_filt <- tss[-x,]
-tss_filt <- tss_filt[rowSums(tss_filt[,9:10]) > 0,] #17154
+tss_filt <- tss_filt[rowSums(tss_filt[,10:11]) > 0,] #17154
 
-save(tss_filt, file = "NumCpGsitesperProm.2kbwindow.RData")
+#save(tss_filt, file = "NumCpGsitesperProm.2kbwindow.RData")
 #load("NumCpGsitesperProm.2kbwindow.RData")
 
 pdf("protoCimp_scatter.pdf")
@@ -136,8 +136,8 @@ red.islands <- makeDFtoPlot(GRsitesSSA, GRsitesAden, red.islandR, red.islands)
 
 #Filter table
 red.islands <- red.islands[rowSums(red.islands[,5:6]) > 0,] #7578
-save(red.islands, file = "NumCpGsitesperIsland.RData")
-load("NumCpGsitesperIsland.RData")
+#save(red.islands, file = "NumCpGsitesperIsland.RData")
+#load("NumCpGsitesperIsland.RData")
 
 ggplot(red.islands, aes(sitesAdenoma, sitesSSA)) + 
   geom_point() + 

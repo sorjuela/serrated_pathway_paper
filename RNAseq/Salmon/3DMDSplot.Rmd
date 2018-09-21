@@ -11,7 +11,6 @@ output: html_document
 #rmarkdown::render("3DMDSplot.Rmd")
 
 knitr::opts_chunk$set(echo = TRUE)
-#setwd("/run/user/1000/gvfs/sftp:host=imlssherborne/home/sorjuela/RNAseq/Salmon")
 
 library(edgeR)
 library(rgl)
@@ -23,7 +22,7 @@ library(genefilter)
 library(ggplot2)
 library(VennDiagram)
 
-load("DGE_obj_Block_withVM_moreGenes_novEdit_cdnaFIX_2fit.RData")
+load("RNAseq/Data/DGE_tests.Rdata") #Available upon request
 ```
 
 

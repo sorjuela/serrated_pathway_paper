@@ -17,12 +17,12 @@ library(ensembldb)
 
 ####Make table to plot ####----------------------------------------------------------------------------
 #to make full plot I use all DMRs without filtering
-load(file = "SSAVsNorm.DMRs.RData")
+load(file = "BiSulf/Data/SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo")
 SSADMRsTable <- as(SSADMRs, "data.frame")
 
-load(file = "AdenVsNorm.DMRs.RData")
+load(file = "BiSulf/Data/AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[biseqDMRs$percentageOverlap >= 25]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo")
 AdenDMRsTable <- as(AdenDMRs, "data.frame")
@@ -32,7 +32,7 @@ annoData <- toGRanges(EnsDb.Hsapiens.v75) #option 1
 proms <- promoters(annoData, upstream = 2000, downstream = 2000) #option 2
 
 #load the lrt list from RNAseq scripts
-load(file="../RNAseq/Salmon/DGE_testsBlock_cdnaFix.Rdata")
+#load(file="../RNAseq/Salmon/DGE_testsBlock_cdnaFix.Rdata"): Available upon request
 
 #function to filter out repeated DMRs
 choose1perGene <- function(annotatedDMRs, factor){
@@ -81,11 +81,11 @@ plotCorr <- function(DMRs, annoData, de, lrt, comparison){
 jointSN <- plotCorr(SSADMRs, annoData, de[,2], lrt[[2]], "SN") 
 jointAN <- plotCorr(AdenDMRs, annoData, de[,1], lrt[[1]], "AN")
 
-#save(jointAN, jointSN, file ="integrationDataFull.RData")
+#save(jointAN, jointSN, file ="Data/integrationDataFull.RData")
 
 ####Setup to plot ####-----------------------------------------------------------
 
-#load("integrationDataFull.RData")
+load("BiSulf/Data/integrationDataFull.RData")
 
 #Genes of interest
 geneA <- jointSN[jointSN$Gene %in% c("ZIC2","HUNK", "ZIC5"),]
@@ -167,11 +167,11 @@ ggsave("corrPlots.pdf", width = 15, height = 10)
 #### Venn diagrams using genes ####-------------------------------
 
 #For this plot we use all the filters
-load(file = "SSAVsNorm.DMRs.RData")
+load(file = "BiSulf/Data/SSAVsNorm.DMRs.RData")
 SSADMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(SSADMRs)$state <- ifelse(SSADMRs$median.meth.diff >= 0, "hyper", "hypo") #26435
 
-load(file = "AdenVsNorm.DMRs.RData")
+load(file = "BiSulf/Data/AdenVsNorm.DMRs.RData")
 AdenDMRs <- biseqDMRs[abs(biseqDMRs$median.meth.diff) >= 0.10 & biseqDMRs$percentageOverlap >= 25 & biseqDMRs$median.p <= 0.01]
 mcols(AdenDMRs)$state <- ifelse(AdenDMRs$median.meth.diff >= 0, "hyper", "hypo") #34382
 
@@ -192,7 +192,7 @@ annotateDMRs <- function(DMRs, annoData){
 
 annoSN <- annotateDMRs(SSADMRs, annoData)
 annoAN <- annotateDMRs(AdenDMRs, annoData)
-save(annoSN, annoAN, file ="annotatedDMRsFiltered.RData")
+#save(annoSN, annoAN, file ="annotatedDMRsFiltered.RData")
 
 pairVenn <- function(anno1, anno2, comp, colors, orientation){
   grid.newpage()
@@ -224,7 +224,7 @@ pairVenn(annoAN, annoSN, c("SSA/Ps","Adenomas"), c("#CD3278","#38678f"), "hypo")
 dev.off()
 
 ### Make tables ###----------------------------------------------------------------------------
-load("annotatedDMRsFiltered.RData")
+load("BiSulf/Data/annotatedDMRsFiltered.RData")
 
 makeTable <- function(x, comp){
   edb <- EnsDb.Hsapiens.v75

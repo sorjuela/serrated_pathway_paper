@@ -29,12 +29,12 @@ library(matrixStats)
 ## load metadata ####-----------------------------------------------------------------------------------------------------
 ##patient ID, file name, lesion, sex, and other stuff
 
-files <- read.table("Data/new_exp_setup.csv", stringsAsFactors = F, header = T) 
+files <- read.table("RNAseq/Data/new_exp_setup.csv", stringsAsFactors = F, header = T) 
 
 ##Make tx2gene table ####-------------------------------------------------------------------------------------------------
 
 ## Read the fasta file in R using a function from the Biostrings package
-cdna <- readDNAStringSet("Homo_sapiens.GRCh37.cdna.all.fa")
+cdna <- readDNAStringSet("Homo_sapiens.GRCh37.cdna.all.fa") 
 
 ## Go through the sequence names and extract the required information
 tx2gene <- data.frame(t(sapply(names(cdna), function(nm) {
@@ -139,7 +139,7 @@ colnames(yg$genes) <- c("ENSEMBLID", "GENESYMBOL",
                       "CHROM", "START", "END", "WIDTH", "STRAND", 
                       paste0(y$samples$samples,".",y$samples$group))
 
-save(yg, file="DGEList.RData")
+save(yg, file="RNAseq/Data/DGEList.RData")
 
 ##Statistical testing, fit gene-wise glms ####-------------------------------------------------------------------------
 
@@ -162,7 +162,7 @@ de[,3] <- decideTestsDGE(lrt[[3]], p.value=0.05, lfc=1)
 
 des_b <- as.data.frame(de)
 colnames(des_b)=c("ADENOMA-NORMAL","SSA-NORMAL","SSA-ADENOMA")
-#save(lrt, de, des_b, file="DGE_tests.Rdata")
+#save(lrt, de, des_b, file="DGE_tests.Rdata") #Available upon request
 
 ##Make master table ####-----------------------------------------------------------------------------------------------
 res <- data.frame(yg$genes)
@@ -184,5 +184,5 @@ pvals <- res[, grep("PValue", colnames(res))]
 rm <- rowMins(as.matrix(pvals))
 o <- order(rm)
 res <- res[o,]
-write.table(res, "DEgenes_cdna.csv", row.names=F, quote=FALSE, sep="\t")
+write.table(res, "RNAseq/Data/DEgenes_cdna.csv", row.names=F, quote=FALSE, sep="\t")
 

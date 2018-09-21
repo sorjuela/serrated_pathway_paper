@@ -20,8 +20,8 @@ library(genefilter)
 library(ggplot2)
 library(VennDiagram)
 
-load(file = "DGE_obj.RData")
-load(file= "DGE_tests.Rdata")
+load(file = "RNAseq/Data/DGE_obj.RData")
+load(file= "RNAseq/Data/DGE_tests.Rdata")
 
 ##Venn diagram ####---------------------------------------------------------------------------------------
 
