@@ -3,7 +3,7 @@
 
 This repository contains the code for the following paper:
 
-* H Parker,S Orjuela, A Martinho Oliveira, F Cereatti, M Sauter, G Tanzi, A Weber, P Komminoth, S Vavricka, L Albanese, F Buffoli, MD Robinson and G Marra: The proto CpG island methylator phenotype of sessile serrated adenoma/polyps. 2018. [Preprint](https://www.biorxiv.org/content/early/2018/06/27/357178.1)
+* H Parker, S Orjuela, A Martinho Oliveira, F Cereatti, M Sauter, G Tanzi, A Weber, P Komminoth, S Vavricka, L Albanese, F Buffoli, MD Robinson and G Marra: The proto CpG island methylator phenotype of sessile serrated adenoma/polyps. Nov 2018. Epigenetics. [paper](https://www.tandfonline.com/doi/full/10.1080/15592294.2018.1543504)
 
 The structure of this repository is as follows:
 
